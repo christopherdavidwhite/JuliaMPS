@@ -1,0 +1,177 @@
+import Base.*
+import Base.'
+import Base./
+import Base.+
+import Base.-
+
+#right now always in B-form
+#s is informational, no need to keep it up to date
+type MPO
+    W :: Array{Array{Complex{Float64},4}, 1}
+    χ :: OffsetArrays.OffsetArray{Int64,1,Array{Int64,1}}
+    d :: Int
+    L :: Int
+    s :: Array{Array{Float64,1},1}
+end
+
+function convert(::Type{MPS}, A :: MPO)
+    d = A.d
+    Wp = [reshape(A.W[j], (d^2,A.χ[j-1],A.χ[j])) for j in 1:A.L]
+    MPS(Wp, A.χ, d^2, A.L, A.s)
+end
+
+function convert(::Type{MPO}, ψ :: MPS)
+    d  = Int(sqrt(ψ.d))
+    Wp = [reshape(ψ.W[j], (d,d,ψ.χ[j-1],ψ.χ[j])) for j in 1:ψ.L]
+    return MPO(Wp, ψ.χ, d, ψ.L, ψ.s)
+end
+
+function canonical_form(A :: MPO; preserve_mag :: Bool = false, χmax :: Int = 0, runtime_check = false)
+    ψ = convert(MPS, A)
+    ψ = canonical_form!(ψ, preserve_mag = preserve_mag, χmax = χmax, runtime_check = runtime_check)
+    A = convert(MPO, ψ)
+    return A
+end
+
+function mpo(Ws :: Array{Array{Complex{Float64},4}, 1})
+    L = length(Ws)
+    
+    χ = OffsetArray(zeros(Int64, L+1), 0:L)
+    χ[0]   = size(Ws[1],3)
+    χ[1:L] = [size(W,4) for W in Ws]
+    
+    d = size(Ws[1], 1)
+    for W = Ws
+        assert(size(W,1) == d)
+        assert(size(W,2) == d)
+    end
+    s = Array(Array{Float64,1}, L)
+    return MPO(Ws,χ,d,L,s)
+end
+
+function mpo(L :: Int64, d :: Int64)
+    return MPO(Array(Array{Complex{Float64}, 4}, L),
+               OffsetArray(Array(Int64, L+1), 0:L),
+               d,L,
+               Array(Array{Float64,1},L))
+end
+
+#physical, physical, bond, bond
+function sanity_check(op :: MPO, verbose :: Bool = false)
+    for j in 1:op.L
+        if verbose
+            @show j, size(op.W[j])
+        end
+        assert(size(op.W[j]) == (op.d, op.d, op.χ[j-1], op.χ[j]))
+    end
+end
+
+function (*)(A :: MPO, c :: Number)
+    B = deepcopy(A)
+    for W in B.W
+        W = W*c
+    end
+    return B
+end
+
+(*)(c :: Number, A :: MPO) = A*c
+(/)(A :: MPO, c :: Number) = A*(1/c)
+
+
+function rfheis_W(J :: Number, h :: Array{Float64,1})
+    σ0 = [1 0; 0 1]
+    σx = [0 1; 1 0]
+    σy = [0 -im; im 0]
+    σz = [1 0;0 -1]
+    σ = [σ0 σx σy σz]
+    d = 2
+    rbdry = [1,0,0,0]
+    lbdry = [0,0,0,1]
+    L = length(h)
+    Ws = Array(Array{Complex{Float64},4}, L)
+    for l in 1:length(h)
+        W = zeros(2,2,5,5)
+        for j in 1:4
+            W[:,:,1,j]   = sqrt(J)*σ[j]
+        end
+        for j in 2:4
+            W[:,:,5,j] = sqrt(J)*σ[j]
+        end
+        
+        W[:,:,5,1] = h[l]*σz
+        W[:,:,5,5] = σ0
+        W[:,:,1,1] = σ0
+        Ws[l] = W
+    end
+    rbc = reshape([1 0 0 0 0;],5,1)
+    lbc = reshape([0,0,0,0,1;], (1,5))
+    W1 = Ws[1]
+    W1p = zeros(Complex{Float64}, (d,d,1,size(W1,4)))
+    @tensor W1p[s,sp,al,ar] = lbc[al,g]*W1[s,sp,g,ar]
+    Ws[1] = W1p
+        
+    WL = Ws[L]
+    WLp = zeros(Complex{Float64}, (d,d,size(WL,4),1))
+    @tensor WLp[s,sp,al,ar] = W1[s,sp,al,g]*rbc[g,ar]
+    Ws[L] = WLp
+    return Ws
+end
+
+function contract(ψ :: MPS, A :: MPO, φ :: MPS)
+    L = ψ.L
+    d = ψ.d
+    l
+    assert(L == A.L)
+    assert(L == φ.L)
+    assert(d == A.d)
+    assert(d == φ.d)
+    
+    C = ones((1,1,1))
+    for j in 1:L-1
+        D = zeros(ψ.χ[j], A.χ[j], φ.χ[j])
+        @tensor D[ap,bp,cp] = (C[a,b,c] * ψ.W[j][s,a,ap] 
+                                       * A.W[j][s,sp,b,bp]
+                                       * φ.W[j][sp,c,cp])
+        C = D
+    end
+
+    @tensor E[ap,bp,cp] = (C[a,b,c]
+                             * ψ.W[j][s,a,ap]
+                             * A.W[j][s,sp,b,bp]
+                             * φ.W[j][sp,c,cp])
+    return squeeze(E)
+end
+
+function cApdB(c :: Number, A :: MPO, d :: Number, B :: MPO)
+    return element(ones(Complex{Float64},2), A⊕B)
+end
+
+(+)(A :: MPO, B :: MPO) = cApdB(1,A,1,B)
+(-)(A :: MPO, B :: MPO) = cApdB(1,A,-1,B)
+
+function mpoeye(L :: Int, d :: Int)
+    I = eye(Complex{Float64}, d)
+    Ws = [reshape(I, (d,d,1,1)) for j in 1:L]
+    return mpo(Ws)
+end
+
+
+function (*)(A :: MPO, B :: MPO)
+    assert(A.L == B.L)
+    assert(A.d == B.d)
+    
+    C = mpo(A.L,A.d)
+    d = A.d
+    for j in 1:A.L
+        W = zeros(d,d,A.χ[j-1],B.χ[j-1],A.χ[j],B.χ[j],)
+        C.χ[j-1] = A.χ[j-1] * B.χ[j-1]
+        C.χ[j]   = A.χ[j]   * B.χ[j]
+        
+        AWj = A.W[j]
+        BWj = B.W[j]
+        @tensor W[s,sp,al1,al2,ar1,ar2] = AWj[s,z,al1,ar1]*BWj[z,sp,al2,ar2]
+        W = reshape(W, (d,d,C.χ[j-1],C.χ[j]))
+        C.W[j] = W
+    end
+    return C
+end
