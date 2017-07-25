@@ -77,7 +77,6 @@ function chebyshev_space(H :: MPO, n :: Int, χmax = 0, verbose :: Bool = false)
         Tnext = canonical_form(Tnext, preserve_mag = true, χmax = χmax, runtime_check = false)
         Trec[1] = Trec[2]
         Trec[2] = Tnext
-        println("--------------------------")
         if verbose
             @show T.χ
             @show Tnext.χ

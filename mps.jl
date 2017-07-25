@@ -13,7 +13,6 @@ function mps(Ws :: Array{Array{Complex{Float64},3}, 1})
     L = length(Ws)
     χ = OffsetArray(zeros(Int64, L+1), 0:L)
     χ[0]   = 1
-    @show size(W[1],1)
     χ[1:L] = [size(W,3) for W in Ws]
     d = size(Ws[1], 1)
     for W = Ws
@@ -33,14 +32,11 @@ end
 
 
 function dot(φ :: MPS, ψ :: MPS)
-    @show size(ψ.W[1])
-    @show size(φ.W[1])
     C = zeros(Complex{Float64},(ψ.χ[1], φ.χ[1]))
     ψW1 = squeeze(ψ.W[1],2)
     φW1 = squeeze(ψ.W[1],2)
     @tensor C[a,ap] = ( ψW1[s,a]
                       * φW1[s,ap])
-    @show size(C)
     for j in 2:L
         D = zeros(Complex{Float64}, (ψ.χ[j], φ.χ[j]))
         
@@ -62,7 +58,6 @@ function site_expectation_value{T}(A :: Array{T,2}, ψ :: MPS, j :: Int)
 end
 
 function canonical_form!(A :: MPS; preserve_mag :: Bool = false,  χmax :: Int = 0, runtime_check = false)
-    println("MPS canonical form")
     L = A.L
     χ = A.χ
     d = A.d
@@ -176,6 +171,5 @@ function canonical_form!(A :: MPS; preserve_mag :: Bool = false,  χmax :: Int =
             A.W[j] = A.W[j]*f^(1/L)
         end
     end
-    @show f
     return A
 end
