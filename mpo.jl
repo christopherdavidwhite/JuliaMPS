@@ -178,24 +178,25 @@ function (*)(A :: MPO, B :: MPO)
     return C
 end
 
-
-# function full(A :: MPO)
-#     L = A.L
-#     d = A.d
-#     χ = A.χ
-#     C = ones(Complex{Float64},(1,χ[0]))
-#     for j in 1:L
-#         M = size(C,1)
-#         Wj = A.W[j]
-#         Cp = zeros(Complex{Float64}, (M, d,d, χ[j]))
-#         @tensor Cp[m, s, sp, ar] = C[m,g]*Wj[s,sp,g,ar]
-#         C = reshape(Cp, (M*d*d, χ[j]))
-#     end
-#     D = reshape(C, tuple([d for j in 1:2L]...))
-#     E = permutedims(D, tittums(2L))
-#     F = reshape(D, (d^L, d^L))
-#     return F
-# end
+function full(A :: MPO)
+    L = A.L
+    d = A.d
+    χ = A.χ
+    C = ones(Complex{Float64},(1,χ[0]))
+    for j in 1:L
+        M = size(C,1)
+        Wj = A.W[j]
+        Cp = zeros(Complex{Float64}, (M, d,d, χ[j]))
+        @tensor Cp[m, s, sp, ar] = C[m,g]*Wj[s,sp,g,ar]
+        C = reshape(Cp, (M*d*d, χ[j]))
+    end
+    D = reshape(C, tuple([d for j in 1:2L]...))
+    t = tittums(2L)
+    tinv = sortperm(t)
+    E = permutedims(D, tinv)
+    F = reshape(E, (d^L, d^L))
+    return F
+end
 
 function onsite_mpo(A :: Array{Complex{Float64},2}, j :: Int, L:: Int)
     d = size(A,1)
