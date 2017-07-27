@@ -68,8 +68,9 @@ end
 
 function (*)(A :: MPO, c :: Number)
     B = deepcopy(A)
-    for W in B.W
-        W = W*c
+    L = B.L
+    for j in 1:L
+        B.W[j] = B.W[j]*c^(1/L)
     end
     return B
 end
@@ -83,16 +84,16 @@ function rfheis_W(J :: Number, h :: Array{Float64,1})
     σx = [0 1; 1 0]
     σy = [0 -im; im 0]
     σz = [1 0;0 -1]
-    σ = [σ0 σx σy σz]
+    σ = [σ0, σx, σy, σz]
     d = 2
     rbdry = [1,0,0,0]
     lbdry = [0,0,0,1]
     L = length(h)
     Ws = Array(Array{Complex{Float64},4}, L)
     for l in 1:length(h)
-        W = zeros(2,2,5,5)
+        W = zeros(Complex{Float64}, 2,2,5,5)
         for j in 1:4
-            W[:,:,1,j]   = sqrt(J)*σ[j]
+            W[:,:,j,1]   = sqrt(J)*σ[j]
         end
         for j in 2:4
             W[:,:,5,j] = sqrt(J)*σ[j]
@@ -112,7 +113,7 @@ function rfheis_W(J :: Number, h :: Array{Float64,1})
         
     WL = Ws[L]
     WLp = zeros(Complex{Float64}, (d,d,size(WL,4),1))
-    @tensor WLp[s,sp,al,ar] = W1[s,sp,al,g]*rbc[g,ar]
+    @tensor WLp[s,sp,al,ar] = WL[s,sp,al,g]*rbc[g,ar]
     Ws[L] = WLp
     return Ws
 end
@@ -143,7 +144,8 @@ function contract(ψ :: MPS, A :: MPO, φ :: MPS)
 end
 
 function cApdB(c :: Number, A :: MPO, d :: Number, B :: MPO)
-    return element(ones(Complex{Float64},2), A⊕B)
+    return element([c+0.0im,d], A⊕B)
+                   
 end
 
 (+)(A :: MPO, B :: MPO) = cApdB(1,A,1,B)
@@ -163,7 +165,7 @@ function (*)(A :: MPO, B :: MPO)
     C = mpo(A.L,A.d)
     d = A.d
     for j in 1:A.L
-        W = zeros(d,d,A.χ[j-1],B.χ[j-1],A.χ[j],B.χ[j],)
+        W = zeros(Complex{Float64}, d,d,A.χ[j-1],B.χ[j-1],A.χ[j],B.χ[j],)
         C.χ[j-1] = A.χ[j-1] * B.χ[j-1]
         C.χ[j]   = A.χ[j]   * B.χ[j]
         
@@ -174,4 +176,31 @@ function (*)(A :: MPO, B :: MPO)
         C.W[j] = W
     end
     return C
+end
+
+
+# function full(A :: MPO)
+#     L = A.L
+#     d = A.d
+#     χ = A.χ
+#     C = ones(Complex{Float64},(1,χ[0]))
+#     for j in 1:L
+#         M = size(C,1)
+#         Wj = A.W[j]
+#         Cp = zeros(Complex{Float64}, (M, d,d, χ[j]))
+#         @tensor Cp[m, s, sp, ar] = C[m,g]*Wj[s,sp,g,ar]
+#         C = reshape(Cp, (M*d*d, χ[j]))
+#     end
+#     D = reshape(C, tuple([d for j in 1:2L]...))
+#     E = permutedims(D, tittums(2L))
+#     F = reshape(D, (d^L, d^L))
+#     return F
+# end
+
+function onsite_mpo(A :: Array{Complex{Float64},2}, j :: Int, L:: Int)
+    d = size(A,1)
+    assert(d == size(A,2))
+    Ws = [reshape(eye(Complex{Float64}, d), (d,d,1,1)) for k in 1:L]
+    Ws[j] = reshape(A, (d,d,1,1))
+    return mpo(Ws)
 end

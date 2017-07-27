@@ -6,13 +6,13 @@ function element(v :: Array{Complex{Float64}}, A :: Algebra)
     assert(A.χ[0] == length(v))
 
     v = reshape(v, (1, length(v)))
-    W1 = A.W[1]
-    W1p = zeros(Complex{Float64}, (A.d,A.d, 1, A.χ[1]))
+    W1 = el.W[1]
+    W1p = zeros(Complex{Float64}, (el.d,el.d, 1, el.χ[1]))
     @tensor W1p[s,sp, al, ar] = v[al, g]*W1[s,sp,g,ar]
     
-    A.W[1] = W1p
-    A.χ[0] = 1
-    return A
+    el.W[1] = W1p
+    el.χ[0] = 1
+    return el
 end
 
 function ⊕(A :: Algebra, B:: MPO)
