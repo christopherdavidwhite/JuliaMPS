@@ -70,7 +70,9 @@ function chebyshev_space(H :: MPO, n :: Int, χmax = 0, verbose :: Bool = false)
     T = mpoeye(L,d)⊕H
     
     for j = 1:(n-2)
-        Tnext = 2*H*Trec[end] - Trec[end-1]
+        @show j
+        Tnext = canonical_form(2*H*Trec[end],       preserve_mag = true, χmax = χmax)
+        Tnext = canonical_form(Tnext - Trec[end-1], preserve_mag = true, χmax = χmax)
         sanity_check(Tnext)
         T = T⊕Tnext
         T     = canonical_form(T,     preserve_mag = true, χmax = χmax, runtime_check = false)

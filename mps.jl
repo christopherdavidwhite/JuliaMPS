@@ -71,7 +71,6 @@ function canonical_form!(A :: MPS; preserve_mag :: Bool = false,  χmax :: Int =
             @tensor twosite[sj, sjp1, al, ar] = Wj[sj, al, g] * Wjp1[sjp1, g, ar]
         end
 
-                                                                   
         W = reshape(A.W[j], (d*χ[j-1], χ[j]))
 
         U, s, V = svd(W, thin=true)

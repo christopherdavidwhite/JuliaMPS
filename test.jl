@@ -49,9 +49,27 @@ H = canonical_form(H, preserve_mag = false, χmax = 0)
 L = 5
 hj1 = rand(L)
 hj2 = rand(L)
-δH = (rfheis_W(1, hj1) |> mpo) - (rfheis_W(1, hj2))
-f = trace(H*H)[1]
-σzcpt = [real(trace(H*onsite_mpo(σz, j, L))[1])/2^L for j in 1:L]
-σzσzcpt = [real(trace(H*onsite_mpo(σz, j, L)*onsite_mpo(σz, j+1, L))[1])/2^L for j in 1:(L-1)]
+δH = (rfheis_W(1, hj1) |> mpo) - (rfheis_W(1, hj2) |> mpo)
+σzcpt = [real(trace(δH*onsite_mpo(σz, j, L))[1])/2^L for j in 1:L]
+σzσzcpt = [real(trace(δH*onsite_mpo(σz, j, L)*onsite_mpo(σz, j+1, L))[1])/2^L for j in 1:(L-1)]
 @test σzcpt ≈ hj1 - hj2
 @test σzσzcpt ≈ zeros(L-1)
+
+
+#test chebyshev
+L = 5
+h = 1
+H = rfheis_W(1.0, h*(2*rand(L)-1)) |> mpo
+H = H/(3*(L-1) + L*h)
+E = H |> full |> eigvals |> real |> sort
+@show E
+n = 5
+T = chebyshev_space(H, n)
+for m in 1:n
+    v = zeros(Complex{Float64},n)
+    v[m] = 1
+    el = element(v,T)
+    fel = full(el)
+    d = fel |> eigvals |> real |> sort
+    @test isapprox( d,  sort(cos((m-1)*acos(E))) , rtol=1e-12)
+end
