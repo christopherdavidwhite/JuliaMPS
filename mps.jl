@@ -1,5 +1,6 @@
 import Base.dot
 import Base.conj
+import Base.convert
 
 type MPS
     W :: Array{Array{Complex{Float64},3}, 1}
@@ -31,12 +32,14 @@ function conj(ψ :: MPS)
 end
 
 
+#note: this function conjugates φ (already sesquilinear)
 function dot(φ :: MPS, ψ :: MPS)
     C = zeros(Complex{Float64},(ψ.χ[1], φ.χ[1]))
     ψW1 = squeeze(ψ.W[1],2)
-    φW1 = squeeze(ψ.W[1],2)
+    φW1c = conj(squeeze(ψ.W[1],2))
     @tensor C[a,ap] = ( ψW1[s,a]
-                      * φW1[s,ap])
+                        * φW1c[s,ap])
+    L = φ.L
     for j in 2:L
         D = zeros(Complex{Float64}, (ψ.χ[j], φ.χ[j]))
         
@@ -49,10 +52,18 @@ function dot(φ :: MPS, ψ :: MPS)
     return squeeze(C)
 end
 
+
+# note: this function conjugates φ (already sesquilinear),
+# i.e. computes <φ|AB|ψ>.
+
+# This function is *crazy* inefficient if φ,ψ are already in canonical
+# form and AB has small support: in that case, want to use the
+# canonical form. todo, I guess...
+
+
 function site_expectation_value{T}(A :: Array{T,2}, ψ :: MPS, j :: Int)
      ψ  = copy(ψ)
-     ψc = conj(ψ)
-     Z = dot(ψc, ψ)
+     Z = dot(ψ, ψ)
      @tensor ψ.W[j][s, al, ar] = A[s,sp] * ψ[sp, al,ar]
      return dot(ψp, ψ)/Z
 end
@@ -172,3 +183,5 @@ function canonical_form!(A :: MPS; preserve_mag :: Bool = false,  χmax :: Int =
     end
     return A
 end
+
+prod_σz_eigstate(spins) = [reshape([s + 0im, 1.0 - s], (2,1,1)) for s in spins] |> mps

@@ -205,3 +205,60 @@ function onsite_mpo(A :: Array{Complex{Float64},2}, j :: Int, L:: Int)
     Ws[j] = reshape(A, (d,d,1,1))
     return mpo(Ws)
 end
+
+function kron(A :: MPO, B :: MPO)
+    assert(A.L == B.L)
+    L = A.L
+    C = Array(Array{Complex{Float64}, 4}, L)
+    for j in 1:L
+        AWj = A.W[j]
+        BWj = B.W[j]
+        @tensor CWj[s,r,sp,rp,al,bl,ar,br] := ( AWj[s,sp,al,ar]
+                                              * BWj[r,rp,bl,br]
+                                              )
+        C[j] = reshape(CWj, (A.d      * B.d,
+                             A.d      * B.d,
+                             A.χ[j-1] * B.χ[j-1],
+                             A.χ[j]   * B.χ[j],
+                            ))
+    end
+    return mpo(C)
+end
+
+function matrix_element(φ :: MPS, A :: MPO, ψ :: MPS,)
+    assert(φ.L == ψ.L)
+    assert(φ.d == ψ.d)
+    
+    assert(A.d == φ.d)
+    assert(A.L == φ.L)
+
+
+    L = A.L
+    
+    ψW1  = squeeze(ψ.W[1],2)
+    φW1c = conj(squeeze(φ.W[1],2))
+    AW1  = squeeze(A.W[1],3)
+    
+    @tensor C[c,a,f] := ( φW1c[s,f]
+                        * AW1[s,sp,a]
+                        * ψW1[sp,c]
+                        )
+    
+    for j in 2:L
+        
+        ψWj = ψ.W[j]
+        φWjc = conj(φ.W[j])
+        AWj = A.W[j]
+        
+        #Is this the optimal contraction order?
+        #(TensorOperations left-associates)
+        @tensor D[c,a,f] := ( C[cl,al,fl]
+                            * ψWj[sp,      cl, c]
+                            * φWjc[s,   fl, f]
+                            * AWj[s,sp, al, a]
+                            )
+        
+        C = D
+    end
+    return squeeze(C)
+end

@@ -56,13 +56,12 @@ hj2 = rand(L)
 @test σzσzcpt ≈ zeros(L-1)
 
 
-#test chebyshev
+#test chebyshev space
 L = 5
 h = 1
 H = rfheis_W(1.0, h*(2*rand(L)-1)) |> mpo
 H = H/(3*(L-1) + L*h)
 E = H |> full |> eigvals |> real |> sort
-@show E
 n = 5
 T = chebyshev_space(H, n)
 for m in 1:n
@@ -73,3 +72,45 @@ for m in 1:n
     d = fel |> eigvals |> real |> sort
     @test isapprox( d,  sort(cos((m-1)*acos(E))) , rtol=1e-12)
 end
+
+#test chebyshev space
+L = 5
+h = 1
+H = rfheis_W(1.0, h*(2*rand(L)-1)) |> mpo
+H = H/(3*(L-1) + L*h)
+E = H |> full |> eigvals |> real |> sort
+n = 5
+traces = chebyshev_traces(H, n)
+for m in 0:n-1
+    @test abs( sum(traces[m+1]) - sum(cos(m*acos(E))) ) < 1e-12
+end
+
+
+# test matrix_element
+L = 5
+σy = [0 -1.0im; 1.0im 0]
+φst = rand([0,1], L)
+φ = φst |> prod_σz_eigstate
+ψst = copy(φst)
+ψst[3] = 1 - ψst[3]
+ψ = ψst |> prod_σz_eigstate
+@test( (ψst[3] - φst[3])*im == matrix_element(φ, onsite_mpo(σy, 3, L), ψ)[] )
+
+
+L = 5
+H1 = rfheis_W(1, rand(L)) |> mpo
+H2 = rfheis_W(1, rand(L)) |> mpo
+H3 = rfheis_W(1, rand(L)) |> mpo
+H4 = rfheis_W(1, rand(L)) |> mpo
+
+H1f = full(H1)
+H2f = full(H2)
+H3f = full(H3)
+H4f = full(H4)
+
+I = mpoeye(L,2)
+H1mps = convert(MPS, H1)
+H4mps = convert(MPS, H4)
+@test( matrix_element(H1mps, kron(H2,I), H4mps) ≈ trace(H1 * H2 * H4) )
+
+@test( matrix_element(H1mps, kron(H2, H3), H4mps) ≈ trace(H3*H1*H2*H4) )

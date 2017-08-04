@@ -99,3 +99,63 @@ function trace(A :: Algebra)
     end
     return C
 end
+
+function chebyshev_space(H :: MPO, n :: Int, χmax = 0, verbose :: Bool = false)
+    assert(n > 2)
+
+    L = H.L
+    d = H.d
+    
+    Trec = [mpoeye(L, d),H]
+    T = mpoeye(L,d)⊕H
+    
+    for j = 1:(n-2)
+        @show j
+        Tnext = canonical_form(2*H*Trec[end],       preserve_mag = true, χmax = χmax)
+        Tnext = canonical_form(Tnext - Trec[end-1], preserve_mag = true, χmax = χmax)
+        sanity_check(Tnext)
+        T = T⊕Tnext
+        T     = canonical_form(T,     preserve_mag = true, χmax = χmax, runtime_check = false)
+        Tnext = canonical_form(Tnext, preserve_mag = true, χmax = χmax, runtime_check = false)
+        Trec[1] = Trec[2]
+        Trec[2] = Tnext
+        if verbose
+            @show T.χ
+            @show Tnext.χ
+        end
+    end
+
+    return T
+end
+
+#will add "operator" as an argument: trace against this operator (list of operators?)
+function chebyshev_traces(H :: MPO, n :: Int, χmax = 0, verbose :: Bool = false)
+    assert(n > 2)
+
+    L = H.L
+    d = H.d
+    
+    Trec = [mpoeye(L, d),H]
+    
+    traces = zeros(Complex{Float64}, n)
+    traces[1] = mpoeye(L,d) |> trace |> ssqueeze
+    traces[2] = H |> trace |> ssqueeze
+    
+    for j = 1:(n-2)
+        @show j
+        @time Tnext = canonical_form(2*H*Trec[end],       preserve_mag = true, χmax = χmax)
+        @time Tnext = canonical_form(Tnext - Trec[end-1], preserve_mag = true, χmax = χmax)
+        sanity_check(Tnext)
+        @show trace(Tnext)
+        @time traces[j+2] = Tnext |> trace |> ssqueeze
+        Trec[1] = Trec[2]
+        Trec[2] = Tnext
+        @show maximum(Tnext.χ)
+        if verbose
+            @show T.χ
+            @show Tnext.χ
+        end
+    end
+
+    return traces
+end

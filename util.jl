@@ -1,6 +1,15 @@
 import Base.squeeze
 
-squeeze{T,N}(A :: Array{T,N}) = squeeze(A, (find(x -> x == 1, size(A))...))
+
+squeeze{T,N}(A :: Array{T,N})  = squeeze(A, (find(x -> x == 1, size(A))...))
+
+#squeeze to scalar. Separate function from squeeze because if not,
+#return type is indefinite. This seems bad.
+function ssqueeze{T,N}(A :: Array{T,N})
+    B = squeeze(A, (find(x -> x == 1, size(A))...))
+    assert(size(B) == ())
+    return B[]
+end
 
 function tittums(n :: Int)
     assert(0 == n % 2)
