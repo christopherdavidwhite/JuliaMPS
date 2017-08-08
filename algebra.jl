@@ -129,7 +129,7 @@ function chebyshev_space(H :: MPO, n :: Int, χmax = 0, verbose :: Bool = false)
 end
 
 #will add "operator" as an argument: trace against this operator (list of operators?)
-function chebyshev_traces(H :: MPO, n :: Int, χmax = 0, verbose :: Bool = false)
+function chebyshev_traces(H :: MPO, n :: Int; prog_per = 0, χmax = 0, verbose :: Bool = false)
     assert(n > 2)
 
     L = H.L
@@ -140,17 +140,22 @@ function chebyshev_traces(H :: MPO, n :: Int, χmax = 0, verbose :: Bool = false
     traces = zeros(Complex{Float64}, n)
     traces[1] = mpoeye(L,d) |> trace |> ssqueeze
     traces[2] = H |> trace |> ssqueeze
-    
+
+    if prog_per != 0
+        tic()
+    end
     for j = 1:(n-2)
-        @show j
-        @time Tnext = canonical_form(2*H*Trec[end],       preserve_mag = true, χmax = χmax)
-        @time Tnext = canonical_form(Tnext - Trec[end-1], preserve_mag = true, χmax = χmax)
+        Tnext = canonical_form(2*H*Trec[end],       preserve_mag = true, χmax = χmax)
+        Tnext = canonical_form(Tnext - Trec[end-1], preserve_mag = true, χmax = χmax)
         sanity_check(Tnext)
-        @show trace(Tnext)
-        @time traces[j+2] = Tnext |> trace |> ssqueeze
+        trace(Tnext)
+        traces[j+2] = Tnext |> trace |> ssqueeze
         Trec[1] = Trec[2]
         Trec[2] = Tnext
-        @show maximum(Tnext.χ)
+        if prog_per != 0 && j % prog_per == 0
+            @show j, toq()
+            tic()
+        end
         if verbose
             @show T.χ
             @show Tnext.χ
