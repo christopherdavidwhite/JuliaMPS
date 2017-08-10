@@ -237,10 +237,10 @@ function matrix_element(φ :: MPS, A :: MPO, ψ :: MPS,)
     
     ψW1  = squeeze(ψ.W[1],2)
     φW1c = conj(squeeze(φ.W[1],2))
-    AW1  = squeeze(A.W[1],3)
+    AW1  = A.W[1]
     
-    @tensor C[c,a,f] := ( φW1c[s,f]
-                        * AW1[s,sp,a]
+    @tensor C[c,l,a,f] := ( φW1c[s,f]
+                        * AW1[s,sp,l,a]
                         * ψW1[sp,c]
                         )
     
@@ -252,11 +252,11 @@ function matrix_element(φ :: MPS, A :: MPO, ψ :: MPS,)
         
         #Is this the optimal contraction order?
         #(TensorOperations left-associates)
-        @tensor D[c,a,f] := ( C[cl,al,fl]
-                            * ψWj[sp,      cl, c]
-                            * φWjc[s,   fl, f]
-                            * AWj[s,sp, al, a]
-                            )
+        @tensor D[c,l,a,f] :=  (    C[cl,l, al,fl]
+                                * ψWj[sp,   cl, c]
+                                * φWjc[s,   fl, f]
+                                * AWj[s,sp, al, a]
+                                )
         
         C = D
     end
