@@ -68,6 +68,7 @@ function site_expectation_value{T}(A :: Array{T,2}, ψ :: MPS, j :: Int)
      return dot(ψp, ψ)/Z
 end
 
+
 function canonical_form!(A :: MPS; preserve_mag :: Bool = false,  χmax :: Int = 0, runtime_check = false)
     L = A.L
     χ = A.χ
@@ -84,23 +85,18 @@ function canonical_form!(A :: MPS; preserve_mag :: Bool = false,  χmax :: Int =
 
         W = reshape(A.W[j], (d*χ[j-1], χ[j]))
 
-        U, s, V = svd(W, thin=true)
-        V = V'
-        snorm = sqrt(sum(s.^2))
-        s = s/snorm
-        f *= snorm
+        F = qrfact!(W)
+        Q,R = full(F[:Q]), F[:R]
+        χ[j] = size(Q,2)
         
-        keep = s .> maximum(s)*1e-15
-
-        s = s[keep]
-        χ[j] = size(s)[1]
+        Rnorm = sqrt(sum(abs(R).^2))
+        R = R/Rnorm
+        f *= Rnorm
         
-        U = reshape(U[:,keep],(d,χ[j-1],χ[j]))
-        V = diagm(s)*V[keep,:]
-        A.W[j] = U
+        Q = reshape(Q,(d,χ[j-1],χ[j]))
+        A.W[j] = Q
         Wjp1 = A.W[j+1]
-        Wjp1p = zeros(Complex{Float64},(d, χ[j], χ[j+1]))
-        @tensor Wjp1p[s,al,ar] = V[al,g]*Wjp1[s,g,ar]
+        @tensor Wjp1p[s,al,ar] := R[al,g]*Wjp1[s,g,ar]
         A.W[j+1] = Wjp1p
 
         if χmax == 0 && runtime_check
@@ -121,8 +117,9 @@ function canonical_form!(A :: MPS; preserve_mag :: Bool = false,  χmax :: Int =
         end
         W = permutedims(A.W[j], [2,1,3])
         W = reshape(W, (χ[j-1], d*χ[j]))
-        U,s,V = svd(W,thin=true)
-        V = V'
+        
+        F = svdfact!(W, thin=true)
+        U,s,V = F[:U], F[:S], F[:Vt]
 
         if runtime_check
             assert(maximum(abs(U*diagm(s)*V - W)) < 1e-10)
@@ -141,29 +138,30 @@ function canonical_form!(A :: MPS; preserve_mag :: Bool = false,  χmax :: Int =
             assert(maximum(abs(twosite_mid - twosite)) < 1e-10)
         end
         
-        snorm = sqrt(sum(s.^2))
-        s = s/snorm
-        f *=snorm
+
         keep = s .> maximum(s)*1e-14
         if χmax > 0
             keep[χmax + 1:end] = false
         end
         s = s[keep]
+        snorm = sqrt(sum(s.^2))
+        s = s/snorm
+        f *=snorm
+        
         A.s[j-1] = s
         χ[j-1] = size(s,1)       
         
-        # B-form
+        # B-form?
         # here is where I would do ν
         U = U[:,keep]
-        U = U*diagm(s)
+        U = scale!(U,s)
         V = V[keep,:]
         V = reshape(V, (χ[j-1], d, χ[j]))
         V = permutedims(V, [2,1,3])
         A.W[j] = V
         
         Wjm1 = A.W[j-1]
-        Wjm1p = zeros(Complex{Float64}, (d,χ[j-2], χ[j-1]))
-        @tensor Wjm1p[s,al,ar] = Wjm1[s,al,g]*U[g,ar]
+        @tensor Wjm1p[s,al,ar] := Wjm1[s,al,g]*U[g,ar]
         A.W[j-1] = Wjm1p
         
         if χmax == 0 && runtime_check
