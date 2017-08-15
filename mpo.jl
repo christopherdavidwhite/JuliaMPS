@@ -118,31 +118,6 @@ function rfheis_W(J :: Number, h :: Array{Float64,1})
     return Ws
 end
 
-function contract(ψ :: MPS, A :: MPO, φ :: MPS)
-    L = ψ.L
-    d = ψ.d
-    l
-    assert(L == A.L)
-    assert(L == φ.L)
-    assert(d == A.d)
-    assert(d == φ.d)
-    
-    C = ones((1,1,1))
-    for j in 1:L-1
-        D = zeros(ψ.χ[j], A.χ[j], φ.χ[j])
-        @tensor D[ap,bp,cp] = (C[a,b,c] * ψ.W[j][s,a,ap] 
-                                       * A.W[j][s,sp,b,bp]
-                                       * φ.W[j][sp,c,cp])
-        C = D
-    end
-
-    @tensor E[ap,bp,cp] = (C[a,b,c]
-                             * ψ.W[j][s,a,ap]
-                             * A.W[j][s,sp,b,bp]
-                             * φ.W[j][sp,c,cp])
-    return squeeze(E)
-end
-
 function cApdB(c :: Number, A :: MPO, d :: Number, B :: MPO)
     return element([c+0.0im,d], A⊕B)
                    

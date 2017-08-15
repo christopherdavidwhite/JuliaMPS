@@ -53,20 +53,6 @@ function dot(φ :: MPS, ψ :: MPS)
 end
 
 
-# note: this function conjugates φ (already sesquilinear),
-# i.e. computes <φ|AB|ψ>.
-
-# This function is *crazy* inefficient if φ,ψ are already in canonical
-# form and AB has small support: in that case, want to use the
-# canonical form. todo, I guess...
-
-
-function site_expectation_value{T}(A :: Array{T,2}, ψ :: MPS, j :: Int)
-     ψ  = copy(ψ)
-     Z = dot(ψ, ψ)
-     @tensor ψ.W[j][s, al, ar] = A[s,sp] * ψ[sp, al,ar]
-     return dot(ψp, ψ)/Z
-end
 
 
 function canonical_form!(A :: MPS; preserve_mag :: Bool = false,  χmax :: Int = 0, runtime_check = false)
