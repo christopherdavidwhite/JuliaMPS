@@ -75,7 +75,7 @@ function canonical_form!(A :: MPS; preserve_mag :: Bool = false,  χmax :: Int =
         Q,R = full(F[:Q]), F[:R]
         χ[j] = size(Q,2)
         
-        Rnorm = sqrt(sum(abs(R).^2))
+        Rnorm = sqrt(sum(abs.(R).^2))
         R = R/Rnorm
         f *= Rnorm
         
@@ -90,7 +90,7 @@ function canonical_form!(A :: MPS; preserve_mag :: Bool = false,  χmax :: Int =
             Wj = A.W[j]
             Wjp1 = A.W[j+1]
             @tensor twosite_after[sj, sjp1, al, ar] = Wj[sj, al, g] * Wjp1[sjp1, g, ar]
-            assert(maximum(abs(twosite_after*snorm - twosite)) < 1e-10)
+            assert(maximum(abs.(twosite_after*snorm - twosite)) < 1e-10)
         end
     end
 

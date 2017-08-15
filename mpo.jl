@@ -45,15 +45,15 @@ function mpo(Ws :: Array{Array{Complex{Float64},4}, 1})
         assert(size(W,1) == d)
         assert(size(W,2) == d)
     end
-    s = Array(Array{Float64,1}, L)
+    s = Array{Array{Float64,1}}(L)
     return MPO(Ws,χ,d,L,s)
 end
 
 function mpo(L :: Int64, d :: Int64)
-    return MPO(Array(Array{Complex{Float64}, 4}, L),
-               OffsetArray(Array(Int64, L+1), 0:L),
+    return MPO(Array{Array{Complex{Float64}, 4}}(L),
+               OffsetArray(Array{Int64}(L+1), 0:L),
                d,L,
-               Array(Array{Float64,1},L))
+               Array{Array{Float64,1}}(L))
 end
 
 #physical, physical, bond, bond
@@ -89,7 +89,7 @@ function rfheis_W(J :: Number, h :: Array{Float64,1})
     rbdry = [1,0,0,0]
     lbdry = [0,0,0,1]
     L = length(h)
-    Ws = Array(Array{Complex{Float64},4}, L)
+    Ws = Array{Array{Complex{Float64},4}}(L)
     for l in 1:length(h)
         W = zeros(Complex{Float64}, 2,2,5,5)
         for j in 1:4
@@ -184,7 +184,7 @@ end
 function kron(A :: MPO, B :: MPO)
     assert(A.L == B.L)
     L = A.L
-    C = Array(Array{Complex{Float64}, 4}, L)
+    C = Array{Array{Complex{Float64}, 4}}(L)
     for j in 1:L
         AWj = A.W[j]
         BWj = B.W[j]
