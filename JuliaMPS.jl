@@ -13,6 +13,7 @@ import Base.-
 import Base.trace
 import Base.full
 import Base.kron
+import Base.transpose
 
 
 include("util.jl")
@@ -27,6 +28,6 @@ export chebyshev_polys, jackson_kernel, pauli_matrices_sparse #util.jl
 export rfheis_sparse #util.jl
 export chebyshev_traces, chebyshev_space, element         #algebra.jl
 export rfheis_W,  mpo, mpoeye, trace, canonical_form, ⊕   #mpo.jl
-export MPO, onsite_mpo, matrix_element                    #mpo.jl
+export MPO, onsite_mpo, matrix_element, transpose         #mpo.jl
 
 end

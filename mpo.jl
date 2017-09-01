@@ -237,3 +237,13 @@ function matrix_element(φ :: MPS, A :: MPO, ψ :: MPS,)
     end
     return squeeze(C)
 end
+
+function transpose(A :: MPO)
+    W = Array{Array{Complex{Float64},4}}(A.L)
+    for l in 1:A.L
+        Wl = A.W[l]
+        @tensor Wlp[s, sp, al, ar] := Wl[sp, s, al, ar]
+        W[l] = Wlp
+    end
+    return mpo(W)
+end
