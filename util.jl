@@ -77,7 +77,7 @@ function rfheis_sparse(J :: Number, hj :: Array{Float64, 1})
     L = length(hj)
     
     (X,Y,Z,P,M) = pauli_matrices_sparse(L)
-    H = sum([X[l]*X[l+1] + Y[l]*Y[l+1] + Z[l]*Z[l+1] for l in 1:L-1])
+    H = J*sum([X[l]*X[l+1] + Y[l]*Y[l+1] + Z[l]*Z[l+1] for l in 1:L-1])
     H += sum([hj[l]*Z[l] for l in 1:L])
     return H
 end
