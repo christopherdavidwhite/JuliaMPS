@@ -19,7 +19,7 @@ function mps(Ws :: Array{Array{Complex{Float64},3}, 1})
     for W = Ws
         assert(size(W,1) == d)
     end
-    s = Array(Array{Float64,1}, L)
+    s = Array{Array{Float64,1}}(L)
     return MPS(Ws,χ,d,L,s)
 end
 
