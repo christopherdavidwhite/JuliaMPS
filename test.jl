@@ -7,10 +7,16 @@ L = 5
 hj = rand(L)
 H = rfheis_W(1, hj) |> mpo
 σz = convert(Array{Complex{Float64},2}, [1.0 0.0; 0 -1])
+σx = convert(Array{Complex{Float64},2}, [0.0 1.0; 1 0])
+σy = convert(Array{Complex{Float64},2}, [0.0 -1.0im; 1im 0])
 σzcpt = [real(trace(H*onsite_mpo(σz, j, L))[1])/2^L for j in 1:L]
 σzσzcpt = [real(trace(H*onsite_mpo(σz, j, L)*onsite_mpo(σz, j+1, L))[1])/2^L for j in 1:(L-1)]
+σxσxcpt = [real(trace(H*onsite_mpo(σx, j, L)*onsite_mpo(σx, j+1, L))[1])/2^L for j in 1:(L-1)]
+σyσycpt = [real(trace(H*onsite_mpo(σy, j, L)*onsite_mpo(σy, j+1, L))[1])/2^L for j in 1:(L-1)]
 @test σzcpt ≈ hj
 @test σzσzcpt ≈ ones(L-1)
+@test σxσxcpt ≈ ones(L-1)
+@test σyσycpt ≈ ones(L-1)
 
 #take an rfheis and test multiplication
 L = 5
@@ -70,7 +76,7 @@ for m in 1:n
     el = element(v,T)
     fel = full(el)
     d = fel |> eigvals |> real |> sort
-    @test isapprox( d,  sort(cos((m-1)*acos(E))) , rtol=1e-12)
+    @test isapprox( d,  sort(cos.((m-1)*acos.(E))) , rtol=1e-12)
 end
 
 #test chebyshev space
@@ -82,7 +88,7 @@ E = H |> full |> eigvals |> real |> sort
 n = 5
 traces = chebyshev_traces(H, n)
 for m in 0:n-1
-    @test abs( sum(traces[m+1]) - sum(cos(m*acos(E))) ) < 1e-12
+    @test abs( sum(traces[m+1]) - sum(cos.(m*acos.(E))) ) < 1e-12
 end
 
 
