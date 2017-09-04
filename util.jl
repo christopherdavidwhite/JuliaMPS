@@ -45,9 +45,8 @@ end
 
 function jackson_kernel(N :: Int)
     m = 0:(N-1)
-    return ( (N - m + 1).*cos.(π*m/(N+1)) + sin.(π*m/(N+1))*cot(π/(N+1)) )/ (N+1)
+    return OffsetArray(( (N - m + 1).*cos.(π*m/(N+1)) + sin.(π*m/(N+1))*cot(π/(N+1)) )/ (N+1), 0:(N-1),)
 end
-
 
 #sparse Pauli matrices
 function pauli_matrices_sparse(L :: Int64)
