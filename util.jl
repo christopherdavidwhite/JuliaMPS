@@ -81,3 +81,44 @@ function rfheis_sparse(J :: Number, hj :: Array{Float64, 1})
     H += sum([hj[l]*Z[l] for l in 1:L])
     return H
 end
+
+function git_commit(dir)
+    olddir = pwd()
+    cd(dir)
+    commit = pipeline(`git log`, `head -1`, `cut -d ' ' -f 2`, `cut -b 1-7`) |> readstring |> chomp
+    cd(olddir)
+    return commit
+end
+
+
+abstract type Metadata end
+
+type V0_Metadata <: Metadata
+    nb        :: Symbol
+    commit    :: String
+    subdate   :: Date
+    L         :: Int
+    model_par :: Dict
+    N         :: Int
+    trunc_par :: Union{Dict, Symbol}
+end
+
+function saveμ(metadata :: Metadata, μ :: OffsetArray, datadir)
+    fileversion = 0
+    savedata = Dict([:fileversion => fileversion,
+                     :metadata    => metadata,
+                     :μ           => μ,
+                     ])
+    fnbase = μfilename_base(fileversion, datadir, metadata)
+    fn = "$fnbase.p"
+    f = open(fn, "w")
+    serialize(f, savedata)
+    close(f)
+    return fn
+end
+
+function μfilename_base(fileversion :: Int, datadir, md :: V0_Metadata)
+    trunc_note = (md.trunc_par isa Symbol) ? md.trunc_par : :mpo
+    fn = "$(datadir)/$(md.nb)_$(md.commit)_$(md.subdate)_L$(md.L)_N$(md.N)_h$(md.model_par[:h])_$(trunc_note)"
+    return fn
+end
