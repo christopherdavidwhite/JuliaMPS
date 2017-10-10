@@ -20,6 +20,7 @@ include("util.jl")
 include("mps.jl")
 include("mpo.jl")
 include("algebra.jl")
+include("conductivity.jl")
 
 export sanity_check, MPS, prod_σz_eigstate                #mps.jl
 export tittums, squeeze, ssqueeze, rfheis_frobenius2      #util.jl
