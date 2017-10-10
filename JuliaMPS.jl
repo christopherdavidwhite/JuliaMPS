@@ -30,5 +30,6 @@ export saveμ, μfilename_base #util.jl
 export chebyshev_traces, chebyshev_space, element         #algebra.jl
 export rfheis_W,  mpo, mpoeye, trace, canonical_form, ⊕   #mpo.jl
 export MPO, onsite_mpo, matrix_element, transpose         #mpo.jl
+export all_μ                                              #conductivity.jl
 
 end
