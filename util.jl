@@ -48,6 +48,11 @@ function jackson_kernel(N :: Int)
     return OffsetArray(( (N - m + 1).*cos.(π*m/(N+1)) + sin.(π*m/(N+1))*cot(π/(N+1)) )/ (N+1), 0:(N-1),)
 end
 
+function lorentz_kernel(λ :: Number, N :: Integer) 
+    n = 0:N-1
+    return OffsetArray(sinh.(λ*(1 - n/N))/sinh(λ), n)
+end
+
 #sparse Pauli matrices
 function pauli_matrices_sparse(L :: Int64)
     sigx = sparse([0 1; 1 0])
