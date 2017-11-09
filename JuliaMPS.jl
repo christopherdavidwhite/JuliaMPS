@@ -20,6 +20,7 @@ include("util.jl")
 include("mps.jl")
 include("mpo.jl")
 include("algebra.jl")
+include("conductivity.jl")
 
 export sanity_check, MPS, prod_σz_eigstate                #mps.jl
 export tittums, squeeze, ssqueeze, rfheis_frobenius2      #util.jl
@@ -29,6 +30,6 @@ export saveμ, μfilename_base, lorentz_kernel              #util.jl
 export chebyshev_traces, chebyshev_space, element         #algebra.jl
 export rfheis_W,  mpo, mpoeye, trace, canonical_form, ⊕   #mpo.jl
 export MPO, onsite_mpo, matrix_element, transpose         #mpo.jl
-export sum_charge_current_W
+export sum_charge_current_W, all_μ
 
 end
