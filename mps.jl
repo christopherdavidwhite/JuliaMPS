@@ -76,7 +76,7 @@ function canonical_form!(A :: MPS; preserve_mag :: Bool = false,  χmax :: Int =
         χ[j] = size(Q,2)
         
         Rnorm = sqrt(sum(abs.(R).^2))
-        R = R/Rnorm
+        scale!(R, 1/Rnorm)
         f *= Rnorm
         
         Q = reshape(Q,(d,χ[j-1],χ[j]))

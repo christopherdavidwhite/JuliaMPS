@@ -118,6 +118,36 @@ function rfheis_W(J :: Number, h :: Array{Float64,1})
     return Ws
 end
 
+function sum_charge_current_W(L :: Int64)
+    σ0 = [1 0; 0 1]
+    σx = [0 1; 1 0]
+    σy = [0 -im; im 0]
+    d = 2
+    Ws = Array{Array{Complex{Float64},4}}(L)
+    for l in 1:L
+        W = zeros(Complex{Float64}, 2,2,4,4)
+
+        W[:,:,2,1] = σx
+        W[:,:,4,2] = 2*σy
+        W[:,:,3,1] = σy
+        W[:,:,4,3] = 2*σx
+        
+        W[:,:,4,4] = σ0
+        W[:,:,1,1] = σ0
+        Ws[l] = W
+    end
+    rbc = reshape([1 0 0 0;],4,1)
+    lbc = reshape([0,0,0,1;], (1,4))
+    W1 = Ws[1]
+    @tensor W1p[s,sp,al,ar] := lbc[al,g]*W1[s,sp,g,ar]
+    Ws[1] = W1p
+        
+    WL = Ws[L]
+    @tensor WLp[s,sp,al,ar] := WL[s,sp,al,g]*rbc[g,ar]
+    Ws[L] = WLp
+    return Ws
+end
+
 function cApdB(c :: Number, A :: MPO, d :: Number, B :: MPO)
     return element([c+0.0im,d], A⊕B)
                    
@@ -140,13 +170,12 @@ function (*)(A :: MPO, B :: MPO)
     C = mpo(A.L,A.d)
     d = A.d
     for j in 1:A.L
-        W = zeros(Complex{Float64}, d,d,A.χ[j-1],B.χ[j-1],A.χ[j],B.χ[j],)
         C.χ[j-1] = A.χ[j-1] * B.χ[j-1]
         C.χ[j]   = A.χ[j]   * B.χ[j]
         
         AWj = A.W[j]
         BWj = B.W[j]
-        @tensor W[s,sp,al1,al2,ar1,ar2] = AWj[s,z,al1,ar1]*BWj[z,sp,al2,ar2]
+        @tensor W[s,sp,al1,al2,ar1,ar2] := AWj[s,z,al1,ar1]*BWj[z,sp,al2,ar2]
         W = reshape(W, (d,d,C.χ[j-1],C.χ[j]))
         C.W[j] = W
     end
