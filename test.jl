@@ -2,6 +2,21 @@ push!(LOAD_PATH, "./")
 using JuliaMPS
 using Base.Test
 
+
+# sum_charge_current_W
+L = 5
+jmpofn = sum_charge_current_W(L) |> mpo |> canonical_form |> full
+
+σy = [0 -1.0im; 1.0im 0]
+σx = [0im 1.0; 1.0 0]
+σym = [onsite_mpo(σy, j, L) for j in 1:L]
+σxm = [onsite_mpo(σx, j, L) for j in 1:L]
+
+jmpo = sum([2*(σym[l]*σxm[l+1] - σxm[l]σym[l+1]) for l in 1:L-1]) |> canonical_form |> full
+
+@test jmpofn ≈ jmpo
+
+
 #test rfheis
 L = 5
 hj = rand(L)
@@ -120,3 +135,4 @@ H4mps = convert(MPS, H4)
 @test( matrix_element(H1mps, kron(H2,I), H4mps) ≈ trace(H1 * H2 * H4) )
 
 @test( matrix_element(H1mps, kron(H2, H3), H4mps) ≈ trace(H3*H1*H2*H4) )
+
